@@ -10,6 +10,8 @@
 > - **Vim 编辑器**：顶栏键盘图标切换，支持 normal/insert/visual、hjkl/w/b/0/$/gg/G、d/y/c、dd/yy/cc、o/O、p、u/Ctrl-R、计数前缀。
 >
 > 部署多人服务见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)。
+> 同步题库：`./scripts/sync_challenges.sh --dry-run <challenges-dir>` 预演，
+> 去掉 `--dry-run` 执行；或在管理面板 → 题库 里一键「同步并重载」（无需重启）。
 > 不带 `--auth`/`--sandbox` 启动时行为与上游一致（单机、无登录、无沙箱）。
 
 

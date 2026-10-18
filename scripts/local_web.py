@@ -21,6 +21,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.request as urllib_request
 import uuid
 import webbrowser
 from contextlib import closing
@@ -1510,6 +1511,35 @@ class WebApplication:
             return True
         return self.share_solutions()
 
+    def reload_catalog(self) -> int:
+        """Rebuild the challenge catalog after a sync, without a restart."""
+        catalog = ChallengeCatalog(self.catalog.challenges_dir)
+        self.catalog = catalog
+        self.jobs.catalog = catalog
+        return len(catalog.list_public())
+
+    def upstream_revision(self) -> Optional[Dict[str, Any]]:
+        """Latest upstream commit, for the admin "check for updates" button."""
+        url = (
+            "https://api.github.com/repos/AlphaGPU/leetgpu-challenges"
+            "/commits/main"
+        )
+        request = urllib_request.Request(
+            url,
+            headers={"Accept": "application/vnd.github+json", "User-Agent": "leetgpu-web"},
+        )
+        try:
+            with urllib_request.urlopen(request, timeout=5) as response:
+                payload = json.loads(response.read())
+        except Exception:  # network off, rate limited, upstream renamed
+            return None
+        commit = payload.get("commit", {})
+        return {
+            "sha": (payload.get("sha") or "")[:12],
+            "date": commit.get("committer", {}).get("date"),
+            "message": (commit.get("message") or "").splitlines()[0][:120],
+        }
+
     def delete_user(self, username: str) -> bool:
         """Delete an account and all of its data, across both databases."""
         if not self.users.delete_user(username):
@@ -1891,6 +1921,14 @@ class RequestHandler(BaseHTTPRequestHandler):
             elif parsed.path == "/api/admin/users":
                 self.require_admin()
                 self.send_json({"users": self.app.users.list_users()})
+            elif parsed.path == "/api/admin/challenges":
+                self.require_admin()
+                challenges = self.app.catalog.list_public()
+                self.send_json({
+                    "count": len(challenges),
+                    "dir": str(self.app.catalog.challenges_dir),
+                    "upstream": self.app.upstream_revision(),
+                })
             elif parsed.path == "/api/admin/pending":
                 self.require_admin()
                 self.send_json(
@@ -2108,6 +2146,28 @@ class RequestHandler(BaseHTTPRequestHandler):
                         str(body.get("username", "")), str(body.get("password", ""))
                     )}
                 )
+            elif parsed.path == "/api/admin/challenges/reload":
+                self.require_admin()
+                self.send_json({"count": self.app.reload_catalog()})
+            elif parsed.path == "/api/admin/challenges/sync":
+                self.require_admin()
+                script = self.app.root / "scripts" / "sync_challenges.sh"
+                if not script.is_file():
+                    raise ApiError("sync_challenges.sh is missing", code="no_sync_script")
+                result = subprocess.run(
+                    [str(script), str(self.app.catalog.challenges_dir)],
+                    capture_output=True,
+                    text=True,
+                    timeout=180,
+                    check=False,
+                )
+                count = self.app.reload_catalog()
+                self.send_json({
+                    "ok": result.returncode == 0,
+                    "count": count,
+                    "output": (result.stdout or "")[-4000:],
+                    "error": (result.stderr or "")[-2000:],
+                })
             elif parsed.path == "/api/admin/settings":
                 self.require_admin()
                 body = self.read_json()

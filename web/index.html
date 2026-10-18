@@ -334,6 +334,7 @@
         <button class="active" data-admin-tab="announcements" data-i18n="admin.announcements">公告</button>
         <button data-admin-tab="users" data-i18n="admin.users">用户</button>
         <button data-admin-tab="pending" data-i18n="admin.pending">待审核</button>
+        <button data-admin-tab="challenges" data-i18n="admin.challenges">题库</button>
       </div>
       <div class="admin-body">
         <div class="admin-pane active" id="admin-announcements">
@@ -379,6 +380,31 @@
             <button type="submit" class="primary-button" data-i18n="admin.add_user">手动添加用户</button>
           </form>
           <div id="admin-users-list"></div>
+        </div>
+        <div class="admin-pane" id="admin-challenges">
+          <div class="admin-controls">
+            <div class="admin-field">
+              <span data-i18n="admin.local_challenges">本地题库</span>
+              <span id="challenges-count">—</span>
+            </div>
+            <div class="admin-field">
+              <span data-i18n="admin.challenges_dir">目录</span>
+              <code id="challenges-dir" class="mono-value">—</code>
+            </div>
+            <div class="admin-field">
+              <span data-i18n="admin.upstream">上游最新</span>
+              <span id="challenges-upstream">—</span>
+            </div>
+          </div>
+          <div class="admin-btn-row">
+            <button class="secondary-button" id="challenges-reload">
+              <i data-lucide="rotate-ccw"></i><span data-i18n="admin.reload">仅重载</span>
+            </button>
+            <button class="primary-button" id="challenges-sync">
+              <i data-lucide="rotate-ccw"></i><span data-i18n="admin.sync">同步并重载</span>
+            </button>
+          </div>
+          <pre class="sync-output hidden" id="challenges-output"></pre>
         </div>
         <div class="admin-pane" id="admin-pending">
           <div id="admin-pending-list"><div class="empty-state" data-i18n="admin.pending_empty">暂无待审核用户</div></div>

@@ -43,6 +43,20 @@ git clone https://github.com/AlphaGPU/leetgpu-challenges upstream/leetgpu-challe
 
 沙箱启动参数里已经带了 `--tmpfs /tmp:rw,nosuid,exec,size=2g`，Dockerfile 里也装了 `python3-dev`。
 
+### 3.5 同步题库
+
+```bash
+# 预演（只报告差异，不改动）
+./scripts/sync_challenges.sh --dry-run /path/to/leetgpu-challenges/challenges
+
+# 执行（原子替换，旧版留作 .bak-时间戳）
+./scripts/sync_challenges.sh /path/to/leetgpu-challenges/challenges
+```
+
+同步会做三件事：下载上游 tarball 到临时目录 → 校验（有 `core/challenge_base.py`、题目数 > 50）→ 用两次 rename 原子替换，旧树保留为 `<dir>.bak-<时间戳>`（只留最新一份）。若有本地新增文件（例如自己放的 `solution/`），默认拒绝，需 `--force`。
+
+**同步后不必重启服务**：管理面板 → 题库 → 「仅重载」会重建题库索引；或者直接点「同步并重载」在界面上完成拉取+重载。
+
 ### 4. 自检：题库是否都能跑
 
 换题库版本（或改镜像）后，先跑这个，别等用户报障：

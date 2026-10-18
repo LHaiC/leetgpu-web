@@ -2243,3 +2243,31 @@ li.CodeMirror-hint-active .leet-hint-doc { color: #071109; }
   color: var(--red);
   font-size: 11px;
 }
+
+/* Admin: challenge set panel */
+.admin-btn-row { display: flex; gap: 8px; }
+.admin-btn-row .primary-button,
+.admin-btn-row .secondary-button { flex: 1; }
+.mono-value {
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: Consolas, monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+.sync-output {
+  max-height: 220px;
+  margin: 0;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #0f110f;
+  color: #bdc5bd;
+  font-family: Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}

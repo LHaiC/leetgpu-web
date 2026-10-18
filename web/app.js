@@ -37,6 +37,12 @@ const elements = {
   runnerName: document.querySelector("#runner-name"),
   sidebar: document.querySelector("#sidebar"),
   sidebarToggle: document.querySelector("#sidebar-toggle"),
+  challengesCount: document.querySelector("#challenges-count"),
+  challengesDir: document.querySelector("#challenges-dir"),
+  challengesOutput: document.querySelector("#challenges-output"),
+  challengesReload: document.querySelector("#challenges-reload"),
+  challengesSync: document.querySelector("#challenges-sync"),
+  challengesUpstream: document.querySelector("#challenges-upstream"),
   shareToggle: document.querySelector("#share-toggle"),
   sharedButton: document.querySelector("#shared-button"),
   sharedCopy: document.querySelector("#shared-copy"),
@@ -1253,6 +1259,26 @@ async function loadPendingUsers() {
   }
 }
 
+async function loadAdminChallenges() {
+  try {
+    const data = await api("/api/admin/challenges");
+    elements.challengesCount.textContent = data.count;
+    elements.challengesDir.textContent = data.dir;
+    elements.challengesUpstream.textContent = data.upstream
+      ? `${data.upstream.sha} · ${data.upstream.message || ""}`.trim().replace(/·\s*$/, "")
+      : I18N.t("admin.upstream_unknown");
+  } catch (error) {
+    toast(error.message, "error");
+  }
+}
+
+/** Refresh the sidebar after the challenge set changed on disk. */
+async function refreshChallengeList() {
+  const data = await api("/api/challenges");
+  state.challenges = data.challenges;
+  renderChallengeList();
+}
+
 async function openAdmin() {
   elements.adminModal.showModal();
   const me = await api("/api/me");
@@ -1536,7 +1562,41 @@ document.querySelectorAll("[data-admin-tab]").forEach((button) => {
     document.querySelectorAll(".admin-pane").forEach((p) =>
       p.classList.toggle("active", p.id === `admin-${button.dataset.adminTab}`),
     );
+    if (button.dataset.adminTab === "challenges") loadAdminChallenges();
   });
+});
+
+elements.challengesReload.addEventListener("click", async () => {
+  elements.challengesReload.disabled = true;
+  try {
+    const result = await api("/api/admin/challenges/reload", { method: "POST", body: "{}" });
+    await loadAdminChallenges();
+    await refreshChallengeList();
+    toast(I18N.t("admin.reloaded", { n: result.count }));
+  } catch (error) {
+    toast(error.message, "error");
+  } finally {
+    elements.challengesReload.disabled = false;
+  }
+});
+
+elements.challengesSync.addEventListener("click", async () => {
+  if (!window.confirm(I18N.t("admin.confirm_sync"))) return;
+  elements.challengesSync.disabled = true;
+  elements.challengesOutput.classList.remove("hidden");
+  elements.challengesOutput.textContent = I18N.t("misc.loading");
+  try {
+    const result = await api("/api/admin/challenges/sync", { method: "POST", body: "{}" });
+    elements.challengesOutput.textContent = result.output || "";
+    await loadAdminChallenges();
+    await refreshChallengeList();
+    toast(I18N.t("admin.synced", { n: result.count }));
+  } catch (error) {
+    elements.challengesOutput.textContent = error.message;
+    toast(error.message, "error");
+  } finally {
+    elements.challengesSync.disabled = false;
+  }
 });
 // ---------- editor ----------
 
