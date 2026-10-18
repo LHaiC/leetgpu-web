@@ -1919,7 +1919,11 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.send_body(
                     html.encode("utf-8"),
                     "text/html; charset=utf-8",
-                    cache_control="no-cache",
+                    # s-maxage applies to the CDN only: the edge answers for a
+                    # minute instead of paying a tunnel round trip, while browsers
+                    # still revalidate (cheaply, against the edge).
+                    cache_control="public, max-age=0, s-maxage=60",
+                    etag=f'W/"html-{self.app.asset_version}"',
                 )
             elif parsed.path.startswith("/static/"):
                 relative = unquote(parsed.path[len("/static/"):])
