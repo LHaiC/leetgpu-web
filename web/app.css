@@ -2069,9 +2069,19 @@ body { background-image: none; }
 
 /* ============================================================
    Autocomplete popup (CodeMirror show-hint) — dark theme
+
+   show-hint.js tags the popup with the editor's theme class
+   (`hints.className = "CodeMirror-hints " + theme`, so the <ul> ends
+   up as `.CodeMirror-hints.leetgpu`). Every rule below anchors on
+   that class: plain `.CodeMirror-hints` ties vendor-only rules on
+   specificity and loses — app.css loads before the vendor sheets.
+   Base layout properties are restated here so the look does not
+   depend on the vendor sheet.
    ============================================================ */
-.CodeMirror-hints {
+.CodeMirror-hints.leetgpu {
+  position: absolute;
   z-index: 20;
+  margin: 0;
   padding: 4px;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
@@ -2079,25 +2089,41 @@ body { background-image: none; }
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
   font-family: Consolas, "Cascadia Code", monospace;
   font-size: 12px;
+  list-style: none;
+  max-height: 20em;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
-.CodeMirror-hint {
+.CodeMirror-hints.leetgpu .CodeMirror-hint {
+  margin: 0;
   padding: 4px 8px;
   border-radius: 5px;
+  white-space: pre;
+  cursor: pointer;
   color: var(--text);
 }
-li.CodeMirror-hint-active {
+/* Word category colouring. Excludes the selected row, so the green
+   pill below stays readable. */
+.CodeMirror-hints.leetgpu .CodeMirror-hint.leet-hint-kw:not(.CodeMirror-hint-active) {
+  color: #82aaff;
+  font-weight: 600;
+}
+.CodeMirror-hints.leetgpu .CodeMirror-hint.leet-hint-ty:not(.CodeMirror-hint-active) {
+  color: #ffcb6b;
+}
+.CodeMirror-hints.leetgpu .CodeMirror-hint.leet-hint-fn:not(.CodeMirror-hint-active) {
+  color: #89ddff;
+}
+.CodeMirror-hints.leetgpu .CodeMirror-hint.leet-hint-doc:not(.CodeMirror-hint-active) {
+  color: var(--muted);
+}
+/* Selected row: green pill with dark text. Placed after the base row
+   rule so it wins the equal-specificity tie. */
+.CodeMirror-hints.leetgpu .CodeMirror-hint-active {
   color: #071109;
   background: var(--green);
 }
-/* Word category colouring, visible in both states. */
-.leet-hint-kw { color: #82aaff; font-weight: 600; }
-.leet-hint-ty { color: #ffcb6b; }
-.leet-hint-fn { color: #89ddff; }
-.leet-hint-doc { color: var(--muted); }
-li.CodeMirror-hint-active .leet-hint-kw,
-li.CodeMirror-hint-active .leet-hint-ty,
-li.CodeMirror-hint-active .leet-hint-fn,
-li.CodeMirror-hint-active .leet-hint-doc { color: #071109; }
 
 /* ============================================================
    Smooth pane switching when changing challenges

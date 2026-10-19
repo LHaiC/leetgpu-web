@@ -16,36 +16,70 @@
     pytorch: "text/x-python",
   };
 
+  /* Qualifiers + warp/block intrinsics. Styling note: clike paints
+     `__`-prefixed identifiers as builtins anyway (isReservedIdentifier), this
+     list mainly decides keyword vs builtin tint and drives the completion
+     vocabulary. Naming convention: warp/vote/shuffle intrinsics live here;
+     math and runtime functions live in CUDA_BUILTINS. */
   const CUDA_KEYWORDS = [
     "__global__", "__device__", "__host__", "__shared__", "__constant__",
     "__managed__", "__restrict__", "__inline__", "__forceinline__",
-    "__launch_bounds__", "__noinline__", "__syncthreads", "__syncwarp",
-    "__threadfence", "__threadfence_block", "__ballot", "__shfl",
-    "__shfl_down", "__any", "__all", "__popc", "__clz", "__ffs",
-    "__float2int_rn", "__int_as_float", "__float_as_int", "cooperative_groups",
+    "__launch_bounds__", "__noinline__", "__grid_constant__",
+    "__extern_shared__", "cooperative_groups",
+    "__syncthreads", "__syncwarp", "__threadfence", "__threadfence_block",
+    "__threadfence_system", "__syncthreads_count", "__syncthreads_and",
+    "__syncthreads_or", "__trap", "__nanosleep",
+    "__ballot", "__ballot_sync", "__any", "__any_sync", "__all", "__all_sync",
+    "__activemask", "__match_any_sync", "__match_all_sync",
+    "__shfl", "__shfl_sync", "__shfl_up", "__shfl_up_sync", "__shfl_down",
+    "__shfl_down_sync", "__shfl_xor", "__shfl_xor_sync",
+    "__reduce_add_sync", "__reduce_min_sync", "__reduce_max_sync",
+    "__reduce_and_sync", "__reduce_or_sync",
+    "__lanemask_lt", "__lanemask_gt", "__lanemask_le", "__lanemask_ge",
+    "__popc", "__clz", "__ffs",
   ];
 
   const CUDA_TYPES = [
     "char2", "char3", "char4", "uchar4", "short2", "short4", "int2", "int3",
     "int4", "uint2", "uint3", "uint4", "longlong2", "float2", "float3",
     "float4", "double2", "double3", "double4", "dim3", "half", "half2",
+    "__half", "__half2", "__nv_bfloat16", "__nv_bfloat162",
+    "uint", "ushort", "ulong",
     "cudaError_t", "cudaStream_t", "cudaEvent_t", "cudaDeviceProp",
   ];
 
   const CUDA_BUILTINS = [
     "blockIdx", "blockDim", "gridDim", "threadIdx", "warpSize",
+    "printf", "clock", "clock64",
     "atomicAdd", "atomicSub", "atomicMax", "atomicMin", "atomicCAS",
     "atomicExch", "atomicInc", "atomicDec", "atomicAnd", "atomicOr",
-    "atomicXor", "cudaMalloc", "cudaMallocManaged", "cudaFree",
+    "atomicXor",
+    "cudaMalloc", "cudaMallocManaged", "cudaMallocAsync", "cudaMallocHost",
+    "cudaFree", "cudaFreeAsync", "cudaFreeHost",
     "cudaMemcpy", "cudaMemcpyAsync", "cudaMemcpyToSymbol", "cudaMemset",
-    "cudaDeviceSynchronize", "cudaGetLastError", "cudaGetErrorString",
+    "cudaMemsetAsync",
+    "cudaDeviceSynchronize", "cudaGetLastError", "cudaPeekAtLastError",
+    "cudaGetErrorString", "cudaGetDevice", "cudaSetDevice",
+    "cudaGetDeviceCount", "cudaGetDeviceProperties",
     "cudaStreamCreate", "cudaStreamDestroy", "cudaStreamSynchronize",
+    "cudaStreamWaitEvent",
     "cudaEventCreate", "cudaEventRecord", "cudaEventSynchronize",
-    "cudaEventElapsedTime", "cudaOccupancyMaxPotentialBlockSize",
+    "cudaEventDestroy", "cudaEventElapsedTime",
+    "cudaLaunchKernel", "cudaFuncSetAttribute",
+    "cudaOccupancyMaxPotentialBlockSize",
     "make_float2", "make_float3", "make_float4", "make_int2", "make_int3",
-    "make_int4", "make_uint3", "make_uint4",
-    "fmaf", "sqrtf", "rsqrtf", "expf", "logf", "powf", "fabsf", "fminf",
-    "fmaxf", "min", "max", "abs", "fmin", "fmax",
+    "make_int4", "make_uint2", "make_uint3", "make_uint4", "make_short2",
+    "make_char2", "make_uchar2", "make_uchar4", "make_longlong2",
+    "make_double2", "make_double3", "make_double4",
+    "fmaf", "sqrtf", "rsqrtf", "expf", "logf", "log2f", "log10f", "exp2f",
+    "powf", "fabsf", "fminf", "fmaxf", "min", "max", "abs", "fmin", "fmax",
+    "sinf", "cosf", "tanf", "tanhf", "atan2f", "atanf", "asinf", "acosf",
+    "floorf", "ceilf", "truncf", "roundf", "rintf", "hypotf", "cbrtf",
+    "__expf", "__logf", "__log2f", "__log10f", "__powf", "__sinf",
+    "__cosf", "__fdividef", "__saturatef", "__frsqrt_rn",
+    "__float2int_rn", "__float2int_rz", "__int2float_rn", "__int_as_float",
+    "__float_as_int", "__float2half", "__float2half_rn", "__half2float",
+    "__double_as_longlong", "__longlong_as_double",
   ];
 
   function words(list) {
@@ -159,7 +193,11 @@
     "shape", "arange", "empty_like", "zeros", "ones", "full", "float32",
     "float16", "bfloat16", "matmul", "softmax", "relu", "sigmoid", "sum", "exp",
     "sqrt", "rsqrt", "log", "abs", "maximum", "minimum", "where", "clamp",
-    "load", "store", "program_id", "num_warps", "num_stages", "constexpr",
+    "load", "store", "dot", "trans", "cumsum", "argmax", "argmin", "exp2",
+    "log2", "tanh", "atomic_add", "atomic_xchg", "atomic_cas", "atomic_max",
+    "atomic_min", "bmm", "addmm", "einsum", "masked_fill", "no_grad",
+    "stack", "cat", "chunk", "detach",
+    "program_id", "num_warps", "num_stages", "constexpr",
     "autotune", "cdiv", "static_range", "range", "and", "as", "assert",
     "async", "await", "break", "class", "continue", "def", "del", "elif",
     "else", "except", "False", "finally", "for", "from", "global", "if",
@@ -234,7 +272,9 @@
     if (typed.length >= 2) {
       for (const word of documentIdentifiers(cm)) add(word, "doc", true);
     }
-    return { list: list.slice(0, 80), from, to };
+    // 300 covers the whole built-in CUDA vocabulary (~270 words); nothing is
+    // cut even when Ctrl-Space is pressed next to an empty prefix.
+    return { list: list.slice(0, 300), from, to };
   }
 
   function installCompletion(editor) {
