@@ -73,6 +73,7 @@
     "make_double2", "make_double3", "make_double4",
     "fmaf", "sqrtf", "rsqrtf", "expf", "logf", "log2f", "log10f", "exp2f",
     "powf", "fabsf", "fminf", "fmaxf", "min", "max", "abs", "fmin", "fmax",
+    "_Pragma",
     "sinf", "cosf", "tanf", "tanhf", "atan2f", "atanf", "asinf", "acosf",
     "floorf", "ceilf", "truncf", "roundf", "rintf", "hypotf", "cbrtf",
     "__expf", "__logf", "__log2f", "__log10f", "__powf", "__sinf",
@@ -248,17 +249,31 @@
   }
 
   /* Preprocessor completions. The identifier vocabulary has nothing useful
-     for hash lines (the kernels here lean on `#pragma unroll`), so a `#`
-     directive gets its own two-stage list instead: directives that may
-     follow `#` directly, then loop-control args that may follow `#pragma `. */
-  const CUDA_HASH_DIRECTIVES = ["pragma", "include"];
+     for hash lines, so a `#` directive gets its own staged list instead:
+     what may follow `#` directly, what may follow `#pragma `, and which
+     headers may follow `#include ` (drawn from what the challenge solutions
+     actually include). */
+  const CUDA_HASH_DIRECTIVES = [
+    "define", "elif", "else", "endif", "error", "if", "ifdef", "ifndef",
+    "include", "line", "pragma", "undef", "warning",
+  ];
   const CUDA_PRAGMA_ARGS = ["unroll", "nounroll", "once"];
+  const CUDA_INCLUDES = [
+    "cuda_runtime.h", "cuda_fp16.h", "cuda_bf16.h", "math_constants.h",
+    "math.h", "stdio.h", "assert.h",
+    "cmath", "cstddef", "cstdint", "cfloat", "climits", "cstring",
+  ];
 
   /* Completion context of the text before the cursor on a preprocessor line,
-     or null when the cursor is not in a `#`-directive. */
+     or null when the cursor is not in a `#`-directive. `typed` is what the
+     insertion will replace, `typedWord` what the candidates match against. */
   function hashContext(linePrefix) {
     let match = /^\s*#\s*pragma\s+(\S*)$/.exec(linePrefix);
     if (match) return { typed: match[1], words: CUDA_PRAGMA_ARGS };
+    match = /^\s*#\s*include\s+(<?)([\w./+-]*)$/.exec(linePrefix);
+    if (match) {
+      return { typed: match[1] + match[2], typedWord: match[2], words: CUDA_INCLUDES, bracket: true };
+    }
     match = /^\s*#\s*(\S*)$/.exec(linePrefix);
     return match ? { typed: match[1], words: CUDA_HASH_DIRECTIVES } : null;
   }
@@ -266,14 +281,18 @@
   function buildHints(cm, language) {
     const cursor = cm.getCursor();
     // In a hash directive the usual word matching is bypassed: `#pragma un`
-    // has to reach "unroll", which no identifier list contains, and once the
-    // list is exhausted there is no popup rather than an unrelated one.
+    // has to reach "unroll" and `#include <cud` has to reach
+    // "<cuda_runtime.h>" — neither lives in an identifier list. Once the
+    // candidates are exhausted there is no popup rather than an unrelated one.
     if (language === "cuda") {
       const directive = hashContext(cm.getLine(cursor.line).slice(0, cursor.ch));
       if (directive) {
         const list = directive.words
-          .filter((word) => word.startsWith(directive.typed))
-          .map((word) => ({ text: word, displayText: word, className: "leet-hint-kw" }));
+          .filter((word) => word.startsWith(directive.typedWord ?? directive.typed))
+          .map((word) => {
+            const text = directive.bracket ? `<${word}>` : word;
+            return { text, displayText: text, className: "leet-hint-kw" };
+          });
         return list.length
           ? { list, from: { line: cursor.line, ch: cursor.ch - directive.typed.length }, to: cursor }
           : null;
