@@ -485,7 +485,7 @@ function renderChallengeList() {
             <span class="challenge-item-title">${escapeHtml(challenge.title)}</span>
             <span class="challenge-item-sub">${I18N.t("sidebar.submissions", { n: challenge.submission_count || 0 })}</span>
           </span>
-          <span class="challenge-item-status">
+          <span class="challenge-item-status ${challenge.passed ? `passed ${challenge.difficulty || ""}` : ""}">
             ${challenge.passed ? '<i data-lucide="circle-check"></i>' : `<span class="challenge-item-dot ${challenge.difficulty}"></span>`}
           </span>
         </button>`,

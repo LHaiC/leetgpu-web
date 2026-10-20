@@ -321,6 +321,21 @@ a:focus-visible {
   stroke-width: 2.4;
 }
 
+/* A passed check keeps the difficulty hue (same palette as the unpassed
+   dots and the difficulty badges), so Easy/Medium/Hard stay distinguishable
+   once a row has been solved. */
+.challenge-item-status.easy svg {
+  color: var(--green);
+}
+
+.challenge-item-status.medium svg {
+  color: var(--amber);
+}
+
+.challenge-item-status.hard svg {
+  color: var(--red);
+}
+
 .challenge-item-dot {
   width: 6px;
   height: 6px;
