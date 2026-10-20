@@ -247,7 +247,38 @@
     return found;
   }
 
+  /* Preprocessor completions. The identifier vocabulary has nothing useful
+     for hash lines (the kernels here lean on `#pragma unroll`), so a `#`
+     directive gets its own two-stage list instead: directives that may
+     follow `#` directly, then loop-control args that may follow `#pragma `. */
+  const CUDA_HASH_DIRECTIVES = ["pragma", "include"];
+  const CUDA_PRAGMA_ARGS = ["unroll", "nounroll", "once"];
+
+  /* Completion context of the text before the cursor on a preprocessor line,
+     or null when the cursor is not in a `#`-directive. */
+  function hashContext(linePrefix) {
+    let match = /^\s*#\s*pragma\s+(\S*)$/.exec(linePrefix);
+    if (match) return { typed: match[1], words: CUDA_PRAGMA_ARGS };
+    match = /^\s*#\s*(\S*)$/.exec(linePrefix);
+    return match ? { typed: match[1], words: CUDA_HASH_DIRECTIVES } : null;
+  }
+
   function buildHints(cm, language) {
+    const cursor = cm.getCursor();
+    // In a hash directive the usual word matching is bypassed: `#pragma un`
+    // has to reach "unroll", which no identifier list contains, and once the
+    // list is exhausted there is no popup rather than an unrelated one.
+    if (language === "cuda") {
+      const directive = hashContext(cm.getLine(cursor.line).slice(0, cursor.ch));
+      if (directive) {
+        const list = directive.words
+          .filter((word) => word.startsWith(directive.typed))
+          .map((word) => ({ text: word, displayText: word, className: "leet-hint-kw" }));
+        return list.length
+          ? { list, from: { line: cursor.line, ch: cursor.ch - directive.typed.length }, to: cursor }
+          : null;
+      }
+    }
     const { from, to, typed } = wordBeforeCursor(cm);
     const lower = typed.toLowerCase();
     const seen = new Set();
@@ -280,10 +311,16 @@
   function installCompletion(editor) {
     const run = (cm, manual) => {
       if (cm.state.completionActive) return;
-      if (!manual && wordBeforeCursor(cm).typed.length < 2) return;
+      const language = editor.getOption("mode") === "text/x-cuda" ? "cuda" : "python";
+      // Hash directives stay active after a single typed char (`#pragma u`
+      // must reach "unroll"); ordinary identifiers keep the two-char gate.
+      const cursor = cm.getCursor();
+      const inDirective =
+        language === "cuda" && hashContext(cm.getLine(cursor.line).slice(0, cursor.ch));
+      if (!manual && !inDirective && wordBeforeCursor(cm).typed.length < 2) return;
       cm.showHint({
         hint: (instance, options) => buildHints(instance, options.language),
-        language: editor.getOption("mode") === "text/x-cuda" ? "cuda" : "python",
+        language,
         completeSingle: false,
       });
     };
