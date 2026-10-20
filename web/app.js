@@ -216,8 +216,9 @@ function renderAuthState() {
 
 function openAuthModal(mode = "login") {
   // showModal() throws if the dialog is already open, and a 401 from the
-  // parallel bootstrap can race with this call.
-  if (elements.authModal.open) return;
+  // parallel bootstrap can race with this call — so an open modal never
+  // calls showModal again. It must still switch modes in place, or the
+  // in-modal "没有账号?注册" toggle would dead-click forever.
   session.authMode = mode;
   elements.authModalTitle.textContent = I18N.t(mode === "login" ? "auth.login" : "auth.register");
   elements.authSubmit.textContent = I18N.t(mode === "login" ? "auth.login" : "auth.register");
@@ -227,7 +228,7 @@ function openAuthModal(mode = "login") {
     mode === "login" && !session.registrationOpen ? "none" : "";
   elements.authConfirmWrap.classList.toggle("hidden", mode === "login");
   elements.authError.textContent = "";
-  elements.authModal.showModal();
+  if (!elements.authModal.open) elements.authModal.showModal();
 }
 
 async function submitAuth(event) {
@@ -252,7 +253,7 @@ async function submitAuth(event) {
     }
     elements.authModal.close();
     await refreshSession();
-    initialize();
+    initialize(startBootstrap());
   } catch (error) {
     elements.authError.textContent = error.message;
   }
